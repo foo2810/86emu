@@ -106,3 +106,4 @@ venv.bak/
 # user add
 *.exe
 X86_manual/
+temp/
