@@ -103,5 +103,6 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-# Target
+# user add
 *.exe
+X86_manual/
