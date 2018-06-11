@@ -130,7 +130,7 @@ class ImageFileHeader(HeaderBase):
 		print("PointerToSymbolTable: ", self.PointerToSymbolTable)
 		print("NumberOfSymbols: ", self.NumberOfSymbols)
 		print("SizeOfOptionalHeader: ", self.SizeOfOptionalHeader)
-		print("Characteristics: ", self.Characteristics)
+		print("Characteristics: ", hex(self.Characteristics))
 		
 		print("-" * 20)
 
@@ -362,7 +362,7 @@ class ImageSectionHeader(HeaderBase):
 		print("PointerToLinenumbers: ", self.PointerToLinenumbers)
 		print("NumberOfRelocations: ", self.NumberOfRelocations)
 		print("NumberOfLinenumbers: ", self.NumberOfLinenumbers)
-		print("Characteristics: ", self.Characteristics)
+		print("Characteristics: ", hex(self.Characteristics))
 		
 		print("-" * 20)
 
