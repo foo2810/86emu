@@ -3,6 +3,7 @@
 from __future__ import print_function
 from unicorn import *
 from unicorn.x86_const import *
+from readPE import *
 
 def main():
 	# INC ecx; DEC edx

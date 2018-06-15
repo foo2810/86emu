@@ -134,11 +134,10 @@ class ImageFileHeader(HeaderBase):
 		
 		print("-" * 20)
 
-class ImageDataDirectory(HeaderBase):
-	def __init__(self, bData):
-		super().__init__(bData, 0)		# Caution 0
-		
-		
+class ImageDataDirectoryEntry:
+	def __init__(self, vAddr, size):
+		self.VirtualAddress = vAddr
+		self.Size = size
 		
 class ImageOptionalHeader32(HeaderBase):
 	# 96bytes
@@ -177,8 +176,15 @@ class ImageOptionalHeader32(HeaderBase):
 		self.SizeOfHeapCommit = byteToIntLE(super().readBytes(4))
 		self.LoaderFlags = byteToIntLE(super().readBytes(4))
 		self.NumberOfRvaAndSizes = byteToIntLE(super().readBytes(4))
-		self.DataDirectory = array("L", range(self.NumberOfRvaAndSizes))
-		super().shiftPtr(self.NumberOfRvaAndSizes)
+		
+		self.DataDirectory = list()    #array("L", range(self.NumberOfRvaAndSizes))
+		for i in range(self.NumberOfRvaAndSizes):
+			vAddr = byteToIntLE(super().readBytes(4))
+			size = byteToIntLE(super().readBytes(4))
+			dataDirectoryEntry = ImageDataDirectoryEntry(vAddr, size)
+			self.DataDirectory.append(dataDirectoryEntry)
+			
+		#super().shiftPtr(self.NumberOfRvaAndSizes)
 		#super().shiftPtr(4 * self.NumberOfRvaAndSizes)
 		
 	def printAll(self):
@@ -189,7 +195,7 @@ class ImageOptionalHeader32(HeaderBase):
 		print("SizeOfCode: ", self.SizeOfCode)
 		print("SizeOfInitializedData: ", self.SizeOfInitializedData)
 		print("SizeOfUninitializedData: ", self.SizeOfUninitializedData)
-		print("AddressOfEntryPoint: ", self.AddressOfEntryPoint)
+		print("AddressOfEntryPoint: ", self.AddressOfEntryPoint, "(", hex(self.AddressOfEntryPoint), ")")
 		print("BaseOfCode: ", self.BaseOfCode)
 		print("BaseOfData: ", self.BaseOfData)
 		
@@ -214,7 +220,11 @@ class ImageOptionalHeader32(HeaderBase):
 		print("SizeOfHeapCommit: ", self.SizeOfHeapCommit)
 		print("LoaderFlags: ", self.LoaderFlags)
 		print("NumberOfRvaAndSizes: ", self.NumberOfRvaAndSizes)
-		print("DataDirectory: ", self.DataDirectory)
+		print("DataDirectory: ")
+		for i in range(self.NumberOfRvaAndSizes):
+			print("%d:" % i)
+			print("\tVirtualAddress:", hex(self.DataDirectory[i].VirtualAddress))
+			print("\tSize:", self.DataDirectory[i].Size)
 		
 		print("-" * 20)
 
@@ -255,19 +265,26 @@ class ImageOptionalHeader64(HeaderBase):
 		self.SizeOfHeapCommit = byteToIntLE(super().readBytes(8))
 		self.LoaderFlags = byteToIntLE(super().readBytes(4))
 		self.NumberOfRvaAndSizes = byteToIntLE(super().readBytes(4))
-		self.DataDirectory = array("L", range(self.NumberOfRvaAndSizes))
-		super().shiftPtr(self.NumberOfRvaAndSizes)
+		self.DataDirectory = list()
+		for i in range(self.NumberOfRvaAndSizes):
+			vAddr = byteToIntLE(super().readBytes(4))
+			size = byteToIntLE(super().readBytes(4))
+			dataDirectoryEntry = ImageDataDirectoryEntry(vAddr, size)
+			self.DataDirectory.append(dataDirectoryEntry)
+		
+		#self.DataDirectory = array("L", range(self.NumberOfRvaAndSizes))
+		#super().shiftPtr(self.NumberOfRvaAndSizes)
 		#super().shiftPtr(4 * self.NumberOfRvaAndSizes)
 		
 	def printAll(self):
-		print("[ImageOptionalHeader32]")
+		print("[ImageOptionalHeader64]")
 		print("Magic: ", self.Magic)
 		print("MajorLinkerVersion: ", self.MajorLinkerVersion)
 		print("MinorLinkerVersion: ", self.MinorLinkerVersion)
 		print("SizeOfCode: ", self.SizeOfCode)
 		print("SizeOfInitializedData: ", self.SizeOfInitializedData)
 		print("SizeOfUninitializedData: ", self.SizeOfUninitializedData)
-		print("AddressOfEntryPoint: ", self.AddressOfEntryPoint)
+		print("AddressOfEntryPoint: ", self.AddressOfEntryPoint, "(", hex(self.AddressOfEntryPoint), ")")
 		print("BaseOfCode: ", self.BaseOfCode)
 		#print("BaseOfData: ", self.BaseOfData)
 		
@@ -292,7 +309,12 @@ class ImageOptionalHeader64(HeaderBase):
 		print("SizeOfHeapCommit: ", self.SizeOfHeapCommit)
 		print("LoaderFlags: ", self.LoaderFlags)
 		print("NumberOfRvaAndSizes: ", self.NumberOfRvaAndSizes)
-		print("DataDirectory: DATADIRECTORY_SAMPLE")
+		print("DataDirectory: ")
+		for i in range(self.NumberOfRvaAndSizes):
+			print("%d:" % i)
+			print("\tVirtualAddress:", hex(self.DataDirectory[i].VirtualAddress))
+			print("\tSize:", self.DataDirectory[i].Size)
+		#print("DataDirectory: DATADIRECTORY_SAMPLE")
 		#print("DataDirectory: ", self.DataDirectory)
 		
 		print("-" * 20)
@@ -342,7 +364,7 @@ class ImageSectionHeader(HeaderBase):
 		
 		self.name = super().readBytes(8)
 		self.Misc = super().readBytes(4)
-		self.VirtualAddress = super().readBytes(4)
+		self.VirtualAddress = byteToIntLE(super().readBytes(4))
 		self.SizeOfRawData = byteToIntLE(super().readBytes(4))
 		self.PointerToRawData = byteToIntLE(super().readBytes(4))
 		self.PointerToRelocations = byteToIntLE(super().readBytes(4))
@@ -355,7 +377,7 @@ class ImageSectionHeader(HeaderBase):
 		print("[SectionHeader]")
 		print("Name: ", self.name)
 		print("Misc: ", self.Misc)
-		print("VirtualAddress: ", self.VirtualAddress)
+		print("VirtualAddress: ", hex(self.VirtualAddress))
 		print("SizeOfRawData: ", self.SizeOfRawData, "(", hex(self.SizeOfRawData), ")")
 		print("PointerToRawData: ", self.PointerToRawData, "(", hex(self.PointerToRawData), ")")
 		print("PointerToRelocations: ", self.PointerToRelocations)
@@ -384,6 +406,19 @@ class SectionTable(HeaderBase):
 		for i in range(self.numberOfSection):
 			self.sectionHeaders[i].printAll()
 		print("-" * 30)
+		
+class PEHeaders:
+	def __init__(self, bData):
+		self.bData = bData
+		self.msDosHeader = MSDOSHeader(self.bData)
+		self.ntHeader = NTHeader(self.bData, self.msDosHeader.e_lfanew)
+		self.sectionTable = SectionTable(self.bData, self.ntHeader.getEndOffset()+1, self.ntHeader.FileHeader.NumberOfSections)
+	
+	def printAll(self):
+		print("[PE File Info]")
+		self.msDosHeader.printAll()
+		self.ntHeader.printAll()
+		self.sectionTable.printAll()
 
 
 class PEReader:
@@ -393,17 +428,13 @@ class PEReader:
 		
 		st = path.open("rb")
 		self.bData = st.read()
-		self.msDosHeader = MSDOSHeader(self.bData)
-		self.ntHeader = NTHeader(self.bData, self.msDosHeader.e_lfanew)
-		self.sectionTable = SectionTable(self.bData, self.ntHeader.getEndOffset()+1, self.ntHeader.FileHeader.NumberOfSections)
+		
+		self.peHeaders = PEHeaders(self.bData)
 		
 		st.close()
 	
 	def printAll(self):
-		print("[PE File Info]")
-		self.msDosHeader.printAll()
-		self.ntHeader.printAll()
-		self.sectionTable.printAll()
+		self.peHeaders.printAll()
 		
 def main():
 	args = sys.argv
@@ -419,17 +450,6 @@ def main():
 	peReader = PEReader(path)
 	peReader.printAll()
 	
-	"""
-	msdosh = MSDOSHeader(data)
-	nth = NTHeader(data, msdosh.e_lfanew)
-	
-	
-	sectionTable = SectionTable(data, nth.getEndOffset()+1, nth.FileHeader.NumberOfSections)
-	
-	msdosh.printAll()
-	nth.printAll()
-	sectionTable.printAll()
-	"""
 	
 
 if __name__ == "__main__":
