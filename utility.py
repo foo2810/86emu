@@ -1,5 +1,6 @@
 # Utilities
 
+
 def byteToIntLE(byte_data):
 	"""
 	value_str = ""
@@ -26,4 +27,4 @@ def getStringFromBytes(byte_data, ptr):
 			break
 		bStr = bStr + b.to_bytes(1, "little")
 	
-	return bStr.decode("utf-8")
+	return bStr.decode("utf-8", errors="ignore")

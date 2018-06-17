@@ -33,7 +33,14 @@ class PEReader:
 	def dumpImportTable(self, mapData):
 		importTableVRva = self.peHeaders.optionalHeader.DataDirectory[1].VirtualAddress
 		importTableSize = self.peHeaders.optionalHeader.DataDirectory[1].Size
-		self.importTable = ImportTable(mapData, importTableVRva, importTableSize, 32)
+		if self.peHeaders.optionalHeader.Magic == b"\x0b\x01":
+			magic = 32
+		elif self.peHeaders.optionalHeader.Magic == b"\x0b\x02":
+			magic = 64
+		else:
+			raise ROMImage("in dumpImportTable")
+			
+		self.importTable = ImportTable(mapData, importTableVRva, importTableSize, magic)
 		self.importTable.printAll()
 		
 		

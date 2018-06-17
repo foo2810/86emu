@@ -6,14 +6,14 @@ from utility import *
 class ImageImportByName(HeaderBase):
 	def __init__(self, mapData, ptr):
 		super().__init__(mapData, ptr)
-		self.Hint = super().readBytes(2)
+		self.Hint = byteToIntLE(super().readBytes(2))
 		self.Name = getStringFromBytes(mapData, super().getCurrentPosition())
 		super().shiftPtr(len(self.Name) + 1)
 	
 	def printAll(self):
 		print("[ImageImportByName]")
 		print("Hint: ", self.Hint)
-		print("Name: ", self.Name)
+		print("Name(", hex(super().getStartOffset()), "): ", self.Name)
 
 class ImageThunkData32(HeaderBase):
 	def __init__(self, mapData, ptr):
@@ -78,8 +78,8 @@ class ImageImportDescriptor(HeaderBase):
 		self.TimeDataStamp = byteToIntLE(super().readBytes(4))
 		self.ForwarderChain = super().readBytes(4)
 		
-		nameRVA = byteToIntLE(super().readBytes(4))
-		self.Name = getStringFromBytes(mapData, nameRVA)
+		self.nameRVA = byteToIntLE(super().readBytes(4))
+		self.Name = getStringFromBytes(mapData, self.nameRVA)
 		
 		firstThunkRVA = byteToIntLE(super().readBytes(4))
 		addr = firstThunkRVA
@@ -113,11 +113,12 @@ class ImageImportDescriptor(HeaderBase):
 		print("Union: ", self.Union)
 		print("TimeDataStamp: ", self.TimeDataStamp)
 		print("ForwarderChain: ", self.ForwarderChain)
-		print("Name: ", self.Name)
+		print("Name(", hex(self.nameRVA), "): ", self.Name)
 		print("Thunks: ")
+		
 		for thunk in self.FirstThunk:
 			thunk.printAll()
-		
+			
 		print("-" * 20)
 	
 class ImportTable(HeaderBase):

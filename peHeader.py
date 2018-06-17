@@ -9,6 +9,12 @@ from utility import *
 # DWORD: 32bits unsigned
 # LONG: 32bits signed
 
+class ROMImage(Exception):
+	description = "This PE format file is ROM image"
+	def __init__(self, info=""):
+		import sys
+		print(ROMImage.description + " - " + info, file=sys.stderr)
+
 class MSDOSHeader(HeaderBase):
 	# 64bytes
 	def __init__(self, bData):
@@ -152,7 +158,7 @@ class ImageOptionalHeader32(HeaderBase):
 		print("BaseOfData: ", self.BaseOfData)
 		
 		print("ImageBase: ", hex(self.ImageBase))
-		print("SectionAlignment: ", self.SectionAlignment)
+		print("SectionAlignment: ", hex(self.SectionAlignment))
 		print("FileAlignment: ", hex(self.FileAlignment))
 		print("MajorOperatingSystemVersion: ", self.MajorOperatingSystemVersion)
 		print("MinorOperatingSystemVersion: ", self.MinorOperatingSystemVersion)
@@ -242,8 +248,8 @@ class ImageOptionalHeader64(HeaderBase):
 		#print("BaseOfData: ", self.BaseOfData)
 		
 		print("ImageBase: ", hex(self.ImageBase))
-		print("SectionAlignment: ", self.SectionAlignment)
-		print("FileAlignment: ", self.FileAlignment)
+		print("SectionAlignment: ", hex(self.SectionAlignment))
+		print("FileAlignment: ", hex(self.FileAlignment))
 		print("MajorOperatingSystemVersion: ", self.MajorOperatingSystemVersion)
 		print("MinorOperatingSystemVersion: ", self.MinorOperatingSystemVersion)
 		print("MajorImageVersion: ", self.MajorImageVersion)
@@ -272,12 +278,6 @@ class ImageOptionalHeader64(HeaderBase):
 		#print("DataDirectory: ", self.DataDirectory)
 		"""
 		print("-" * 20)
-
-class ROMImage(Exception):
-	description = "This PE format file is ROM image"
-	def __init__(self):
-		import sys
-		print(description, file=sys.stderr)
 		
 class NTHeader(HeaderBase):
 	# 4 + 20 + 96 + alpha = 120 + alpha bytes
@@ -312,6 +312,8 @@ class ImageSectionHeader(HeaderBase):
 	# Size: 40
 	
 	nameLength = 8
+	# Alloc magic
+	allocMagic = 0xE0000000
 	
 	def __init__(self, bData, ptr):
 		super().__init__(bData, ptr)
@@ -338,6 +340,9 @@ class ImageSectionHeader(HeaderBase):
 		super().moveTo(savePtr)
 		
 		return rawData
+	
+	def isAlloced(self):
+		return self.Characteristics & ImageSectionHeader.allocMagic != 0
 
 	def printAll(self):
 		print("[SectionHeader]")
@@ -352,7 +357,7 @@ class ImageSectionHeader(HeaderBase):
 		print("NumberOfRelocations: ", self.NumberOfRelocations)
 		print("NumberOfLinenumbers: ", self.NumberOfLinenumbers)
 		print("Characteristics: ", hex(self.Characteristics))
-		if self.Characteristics & 0xE0000000 != 0:
+		if self.Characteristics & ImageSectionHeader.allocMagic != 0:
 			print("\tThis section is alloced.")
 		
 		print("-" * 20)

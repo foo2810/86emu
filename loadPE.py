@@ -22,26 +22,30 @@ class PEFileLoader:
 		self.mapData.close()
 		
 	# Not Complete!!!!!!!!!!!!
+	# セグメントに対するアクセス制限は考慮していない
+	# ...etc
 	def __loadToMemory(self):
 		if not self.isLoaded:
 			print("[Caution] loadToMemory is not COMPLETED!!!!!!!!!!\n")
 			
 			alignment = self.peHeader.ntHeader.OptionalHeader.SectionAlignment
-			entryPoint = self.peHeader.ntHeader.OptionalHeader.AddressOfEntryPoint
 			baseAddr = self.peHeader.ntHeader.OptionalHeader.ImageBase
 			mapSize = self.peHeader.ntHeader.OptionalHeader.SizeOfImage
+			#entryPoint = self.peHeader.ntHeader.OptionalHeader.AddressOfEntryPoint
 			
 			print("[LOAD PE FORMAT FILE]")
 			print("BaseAddress: ", hex(baseAddr))
 			print("Alignment: ", hex(alignment))
-			print("EntryPoint: ", hex(entryPoint))
+			#print("EntryPoint: ", hex(entryPoint))
 			
 			
 			self.mapData = mmap(-1, mapSize, None, ACCESS_WRITE)
-			self.mapData.write(b"\x00" * entryPoint)
 			
 			print("[Sections]")
 			for section in self.peHeader.sectionTable:
+				if not section.isAlloced:
+					continue
+				
 				name = section.name
 				vRva = section.VirtualAddress
 				size = section.SizeOfRawData
@@ -52,13 +56,19 @@ class PEFileLoader:
 				
 				
 				# Padding (alignment)
+				"""
 				if self.mapData.tell() % alignment != 0:
 					cnt = alignment - (self.mapData.tell() % alignment)
 					for i in range(cnt):
 						self.mapData.write_byte(0)
+				"""
 				
-				curPos = self.mapData.tell()
-				print("\tCurrent Position of MemoryMap: ", hex(curPos))
+				curPosB = self.mapData.tell()
+				if vRva > curPosB:
+					self.mapData.write(b"\x00" * (vRva - curPosB))
+				
+				curPosA = self.mapData.tell()
+				print("\tHead Position of MemoryMap: ", hex(curPosA))
 				
 				rawData = section.getRawData()
 				self.mapData.flush()
