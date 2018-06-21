@@ -26,6 +26,9 @@ class HeaderBase:
 	def getEndOffset(self):
 		return self.cPtr - 1
 	
+	def getSize(self):
+		return self.cPtr - self.selfOffset
+	
 	def checkMagic(self, size):
 		readData = self.readBytes(size)
 		self.shiftPtr(-size)

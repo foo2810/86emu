@@ -90,4 +90,3 @@ class PEFileLoader:
 		st.write(dumpData)
 		st.flush()
 		st.close()
-
