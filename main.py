@@ -44,11 +44,11 @@ def main():
 	st.close()
 	
 	## ImportTable
-	if option in "I" or option in "a":
+	if "I" in option or "a" in option:
 		peReader.dumpImportTable(dump)
 	
 	## RelocationTable
-	if option in "R" or option in "a":
+	if "R" in option or "a" in option:
 		peReader.dumpRelocationTable(dump)
 	
 if __name__ == "__main__":
