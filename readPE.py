@@ -12,7 +12,6 @@
 from array import array
 from pathlib import Path
 
-from peBaseClass import *
 from peHeader import *
 from importTable import *
 from relocationTable import *

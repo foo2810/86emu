@@ -3,7 +3,7 @@
 from peBaseClass import *
 from utility import *
 
-class RelocationThunk(HeaderBase):
+class RelocationThunk(BinaryReader):
 	def __init__(self, mapData, ptr):
 		super().__init__(mapData, ptr)
 		thunk = byteToIntLE(super().readBytes(2))
@@ -15,7 +15,7 @@ class RelocationThunk(HeaderBase):
 		print("Type: ", self.type)
 		print("Offset: ", self.offset)
 
-class ImageBaseRelocation(HeaderBase):
+class ImageBaseRelocation(BinaryReader):
 	def __init__(self, mapData, ptr):
 		super().__init__(mapData, ptr)
 		self.VirtualAddress = byteToIntLE(super().readBytes(4))
@@ -40,7 +40,7 @@ class ImageBaseRelocation(HeaderBase):
 			thunk.printAll()
 		"""
 		
-class RelocationTable(HeaderBase):
+class RelocationTable(BinaryReader):
 	def __init__(self, mapData, ptr, size):
 		super().__init__(mapData, ptr)
 		

@@ -3,7 +3,7 @@
 from peBaseClass import *
 from utility import *
 
-class ImageImportByName(HeaderBase):
+class ImageImportByName(BinaryReader):
 	def __init__(self, mapData, ptr):
 		super().__init__(mapData, ptr)
 		self.Hint = byteToIntLE(super().readBytes(2))
@@ -15,7 +15,7 @@ class ImageImportByName(HeaderBase):
 		print("Hint: ", self.Hint)
 		print("Name(", hex(super().getStartOffset()), "): ", self.Name)
 
-class ImageThunkData32(HeaderBase):
+class ImageThunkData32(BinaryReader):
 	def __init__(self, mapData, ptr):
 		IMAGE_ORDINAL_FLAG32 = 0x80000000
 		
@@ -43,7 +43,7 @@ class ImageThunkData32(HeaderBase):
 		
 		print("-" * 10)
 
-class ImageThunkData64(HeaderBase):
+class ImageThunkData64(BinaryReader):
 	def __init__(self, mapData, ptr):
 		IMAGE_ORDINAL_FLAG64 = 0x8000000000000000
 
@@ -69,7 +69,7 @@ class ImageThunkData64(HeaderBase):
 		
 		print("-" * 10)
 
-class ImageImportDescriptor(HeaderBase):
+class ImageImportDescriptor(BinaryReader):
 	# 20 bytes
 	
 	def __init__(self, mapData, ptr, magic):
@@ -123,7 +123,7 @@ class ImageImportDescriptor(HeaderBase):
 		print("-" * 20)
 		"""
 	
-class ImportTable(HeaderBase):
+class ImportTable(BinaryReader):
 	ImportDescriptorSize = 20
 	def __init__(self, mapData, vRva, size, magic):
 		super().__init__(mapData, vRva)

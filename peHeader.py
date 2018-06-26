@@ -15,7 +15,7 @@ class ROMImage(Exception):
 		import sys
 		print(ROMImage.description + " - " + info, file=sys.stderr)
 
-class MSDOSHeader(HeaderBase):
+class MSDOSHeader(BinaryReader):
 	# 64bytes
 	def __init__(self, bData):
 		super().__init__(bData, 0)
@@ -66,7 +66,7 @@ class MSDOSHeader(HeaderBase):
 		
 		print("-" * 30)
 
-class ImageFileHeader(HeaderBase):
+class ImageFileHeader(BinaryReader):
 	# 22bytes
 	
 	def __init__(self, bData, ptr):
@@ -97,7 +97,7 @@ class ImageDataDirectoryEntry:
 		self.VirtualAddress = vAddr
 		self.Size = size
 		
-class ImageOptionalHeader32(HeaderBase):
+class ImageOptionalHeader32(BinaryReader):
 	# 96bytes
 	
 	def __init__(self, bData, ptr):
@@ -187,7 +187,7 @@ class ImageOptionalHeader32(HeaderBase):
 		
 		print("-" * 20)
 
-class ImageOptionalHeader64(HeaderBase):
+class ImageOptionalHeader64(BinaryReader):
 	# 96bytes
 	
 	def __init__(self, bData, ptr):
@@ -279,7 +279,7 @@ class ImageOptionalHeader64(HeaderBase):
 		"""
 		print("-" * 20)
 		
-class NTHeader(HeaderBase):
+class NTHeader(BinaryReader):
 	# 4 + 20 + 96 + alpha = 120 + alpha bytes
 	
 	def __init__(self, bData, ptr):
@@ -308,7 +308,7 @@ class NTHeader(HeaderBase):
 
 
 
-class ImageSectionHeader(HeaderBase):
+class ImageSectionHeader(BinaryReader):
 	# Size: 40
 	
 	nameLength = 8
@@ -363,7 +363,7 @@ class ImageSectionHeader(HeaderBase):
 		print("-" * 20)
 
 
-class SectionTable(HeaderBase):
+class SectionTable(BinaryReader):
 	def __init__(self, bData, ptr, nsec):
 		super().__init__(bData, ptr)
 		

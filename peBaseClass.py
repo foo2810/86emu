@@ -1,6 +1,6 @@
 # Base class for PE Format
 
-class HeaderBase:
+class BinaryReader:
 	def __init__(self, bData, selfOffset_):
 		self.rawData = bData
 		self.cPtr = selfOffset_
