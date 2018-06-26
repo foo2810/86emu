@@ -131,8 +131,10 @@ class ImportTable(HeaderBase):
 		# For iteration
 		self.i = 0
 		
+		self.size = size
 		self.ImportTableEntries = list()
 		self.numberOfEntry = 0
+		
 		addr = vRva
 		entry = ImageImportDescriptor(mapData, addr, magic)
 		while entry.Union != 0:

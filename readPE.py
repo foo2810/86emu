@@ -15,6 +15,7 @@ from pathlib import Path
 from peBaseClass import *
 from peHeader import *
 from importTable import *
+from relocationTable import *
 from utility import *
 
 
@@ -42,7 +43,12 @@ class PEReader:
 			
 		self.importTable = ImportTable(mapData, importTableVRva, importTableSize, magic)
 		self.importTable.printAll()
-		
+	
+	def dumpRelocationTable(self, mapData):
+		relocationTableVRva = self.peHeaders.optionalHeader.DataDirectory[5].VirtualAddress
+		relocationTableSize = self.peHeaders.optionalHeader.DataDirectory[5].Size
+		self.relocationTable = RelocationTable(mapData, relocationTableVRva, relocationTableSize)
+		self.relocationTable.printAll()
 		
 	
 	def printAll(self):
