@@ -1,9 +1,12 @@
-#
+# Relocation Table
+
+# イメージのロードの際、オプショナルヘッダーのImageBaseが指すアドレスにロードできなかった場合、
+# このベース再配置テーブルを利用して、アドレスの再配置を行う
 
 from peBaseClass import *
 from utility import *
 
-class RelocationThunk(BinaryReader):
+class RelocationTarget(BinaryReader):
 	def __init__(self, mapData, ptr):
 		super().__init__(mapData, ptr)
 		thunk = byteToIntLE(super().readBytes(2))
@@ -25,7 +28,7 @@ class ImageBaseRelocation(BinaryReader):
 		self.numberOfThunk = int((self.SizeOfBlock - 8) / 2)
 		
 		for i in range(self.numberOfThunk):
-			thunk = RelocationThunk(mapData, super().getCurrentPosition())
+			thunk = RelocationTarget(mapData, super().getCurrentPosition())
 			self.thunks.append(thunk)
 		
 		super().shiftPtr(self.numberOfThunk * 2)
@@ -40,9 +43,8 @@ class ImageBaseRelocation(BinaryReader):
 			thunk.printAll()
 		"""
 		
-class RelocationTable(BinaryReader):
+class RelocationTable:
 	def __init__(self, mapData, ptr, size):
-		super().__init__(mapData, ptr)
 		
 		# For iteration
 		self.i = 0

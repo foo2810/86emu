@@ -114,7 +114,7 @@ class ImageImportDescriptor(BinaryReader):
 		print("TimeDataStamp: ", self.TimeDataStamp)
 		print("ForwarderChain: ", self.ForwarderChain)
 		print("Name(", hex(self.nameRVA), "): ", self.Name)
-		print("Thunks: ")
+		print("Thunks: (Ellipsis)")
 		
 		"""
 		for thunk in self.FirstThunk:
@@ -123,10 +123,10 @@ class ImageImportDescriptor(BinaryReader):
 		print("-" * 20)
 		"""
 	
-class ImportTable(BinaryReader):
+class ImportTable:
 	ImportDescriptorSize = 20
 	def __init__(self, mapData, vRva, size, magic):
-		super().__init__(mapData, vRva)
+		#super().__init__(mapData, vRva)
 		
 		# For iteration
 		self.i = 0

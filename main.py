@@ -35,7 +35,7 @@ def main():
 		peReader.printAll()
 		
 	## Loader
-	if "I" in option or "R" in option or "a" in option:
+	if "l" in option or "I" in option or "R" in option or "a" in option:
 		loader = PEFileLoader(path)
 		loader.dump("dump.bin")
 	
