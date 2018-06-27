@@ -41,7 +41,7 @@ class ImageThunkData32(BinaryReader):
 		print("Ordinal: ", self.Ordinal)
 		self.AddressOfData.printAll()
 		
-		print("-" * 10)
+		print("-" * 25)
 
 class ImageThunkData64(BinaryReader):
 	def __init__(self, mapData, ptr):
@@ -67,7 +67,7 @@ class ImageThunkData64(BinaryReader):
 		print("Function: ", hex(self.Function))
 		self.AddressOfData.printAll()
 		
-		print("-" * 10)
+		print("-" * 25)
 
 class ImageImportDescriptor(BinaryReader):
 	# 20 bytes

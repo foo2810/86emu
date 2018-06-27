@@ -35,13 +35,14 @@ def main():
 		peReader.printAll()
 		
 	## Loader
-	loader = PEFileLoader(path)
-	loader.dump("dump.bin")
+	if "I" in option or "R" in option or "a" in option:
+		loader = PEFileLoader(path)
+		loader.dump("dump.bin")
 	
-	dumpFile = Path("dump.bin")
-	st = dumpFile.open("rb")
-	dump = st.read()
-	st.close()
+		dumpFile = Path("dump.bin")
+		st = dumpFile.open("rb")
+		dump = st.read()
+		st.close()
 	
 	## ImportTable
 	if "I" in option or "a" in option:

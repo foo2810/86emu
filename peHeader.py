@@ -64,7 +64,7 @@ class MSDOSHeader(BinaryReader):
 		print("e_res2: ", self.e_res2)
 		print("e_lfanew: ", self.e_lfanew)
 		
-		print("-" * 30)
+		print("-" * 50)
 
 class ImageFileHeader(BinaryReader):
 	# 22bytes
@@ -90,7 +90,7 @@ class ImageFileHeader(BinaryReader):
 		print("SizeOfOptionalHeader: ", self.SizeOfOptionalHeader)
 		print("Characteristics: ", hex(self.Characteristics))
 		
-		print("-" * 20)
+		print("-" * 30)
 
 class ImageDataDirectoryEntry:
 	def __init__(self, vAddr, size):
@@ -150,9 +150,9 @@ class ImageOptionalHeader32(BinaryReader):
 		print("Magic: ", self.Magic)
 		print("MajorLinkerVersion: ", self.MajorLinkerVersion)
 		print("MinorLinkerVersion: ", self.MinorLinkerVersion)
-		print("SizeOfCode: ", self.SizeOfCode)
-		print("SizeOfInitializedData: ", self.SizeOfInitializedData)
-		print("SizeOfUninitializedData: ", self.SizeOfUninitializedData)
+		print("SizeOfCode: " + hex(self.SizeOfCode), "(", (self.SizeOfCode), ")")
+		print("SizeOfInitializedData: " + hex(self.SizeOfInitializedData), "(", (self.SizeOfInitializedData), ")")
+		print("SizeOfUninitializedData: " + hex(self.SizeOfUninitializedData), "(", (self.SizeOfUninitializedData), ")")
 		print("AddressOfEntryPoint: ", self.AddressOfEntryPoint, "(", hex(self.AddressOfEntryPoint), ")")
 		print("BaseOfCode: ", self.BaseOfCode)
 		print("BaseOfData: ", self.BaseOfData)
@@ -185,7 +185,7 @@ class ImageOptionalHeader32(BinaryReader):
 			print("\tVirtualAddress:", hex(self.DataDirectory[i].VirtualAddress))
 			print("\tSize:", self.DataDirectory[i].Size)
 		
-		print("-" * 20)
+		print("-" * 30)
 
 class ImageOptionalHeader64(BinaryReader):
 	# 96bytes
@@ -277,7 +277,7 @@ class ImageOptionalHeader64(BinaryReader):
 		#print("DataDirectory: DATADIRECTORY_SAMPLE")
 		#print("DataDirectory: ", self.DataDirectory)
 		"""
-		print("-" * 20)
+		print("-" * 30)
 		
 class NTHeader(BinaryReader):
 	# 4 + 20 + 96 + alpha = 120 + alpha bytes
@@ -304,7 +304,7 @@ class NTHeader(BinaryReader):
 		self.FileHeader.printAll()
 		self.OptionalHeader.printAll()
 		
-		print("-" * 30)
+		print("-" * 50)
 
 
 
@@ -360,7 +360,7 @@ class ImageSectionHeader(BinaryReader):
 		if self.Characteristics & ImageSectionHeader.allocMagic != 0:
 			print("\tThis section is alloced.")
 		
-		print("-" * 20)
+		print("-" * 30)
 
 
 class SectionTable(BinaryReader):
