@@ -7,7 +7,7 @@ class ImageImportByName(BinaryReader):
 	def __init__(self, mapData, ptr):
 		super().__init__(mapData, ptr)
 		self.Hint = byteToIntLE(super().readBytes(2))
-		self.Name = getStringFromBytes(mapData, super().getCurrentPosition())
+		self.Name = getStringFromBytePtrLE(mapData, super().getCurrentPosition())
 		super().shiftPtr(len(self.Name) + 1)
 	
 	def printAll(self):
@@ -27,7 +27,7 @@ class ImageThunkData32(BinaryReader):
 		else:
 			self.Ordinal = None
 		
-		self.ForwarderString = getStringFromBytes(mapData, var)
+		self.ForwarderString = getStringFromBytePtrLE(mapData, var)
 		self.Function = var
 		self.AddressOfData = ImageImportByName(mapData, var)
 		
@@ -56,7 +56,7 @@ class ImageThunkData64(BinaryReader):
 		else:
 			self.Ordinal = None
 		
-		self.ForwarderString = getStringFromBytes(mapData, var)
+		self.ForwarderString = getStringFromBytePtrLE(mapData, var)
 		self.Function = var
 		self.AddressOfData = ImageImportByName(mapData, var)
 	
@@ -79,7 +79,7 @@ class ImageImportDescriptor(BinaryReader):
 		self.ForwarderChain = super().readBytes(4)
 		
 		self.nameRVA = byteToIntLE(super().readBytes(4))
-		self.Name = getStringFromBytes(mapData, self.nameRVA)
+		self.Name = getStringFromBytePtrLE(mapData, self.nameRVA)
 		
 		firstThunkRVA = byteToIntLE(super().readBytes(4))
 		addr = firstThunkRVA

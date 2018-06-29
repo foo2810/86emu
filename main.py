@@ -51,6 +51,10 @@ def main():
 	## RelocationTable
 	if "R" in option or "a" in option:
 		peReader.dumpRelocationTable(dump)
+		
+	## [Test] ExportTable
+	if "t" in option:
+		peReader.dumpExportTable(dump)
 	
 if __name__ == "__main__":
 	main()
