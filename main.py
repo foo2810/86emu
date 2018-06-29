@@ -15,6 +15,7 @@ def main():
 		print("I: Show import table")
 		print("R: Show relocation table")
 		print("a: Do everything")
+		print("t: For debug")
 		print("")
 		exit(1)
 	elif argc == 2:
@@ -39,10 +40,15 @@ def main():
 		loader = PEFileLoader(path)
 		loader.dump("dump.bin")
 	
-		dumpFile = Path("dump.bin")
+	dumpFile = Path("./dump.bin")
+	dump = b""
+	if dumpFile.exists():
 		st = dumpFile.open("rb")
 		dump = st.read()
 		st.close()
+	else:
+		print("Error: dump.bin dose not exists")
+		sys.exit(1)
 	
 	## ImportTable
 	if "I" in option or "a" in option:
