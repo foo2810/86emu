@@ -114,14 +114,14 @@ class ImageImportDescriptor(BinaryReader):
 		print("TimeDataStamp: ", self.TimeDataStamp)
 		print("ForwarderChain: ", self.ForwarderChain)
 		print("Name(", hex(self.nameRVA), "): ", self.Name)
-		print("Thunks: (Ellipsis)")
+		#print("Thunks: (Ellipsis)")
+		print("Thunks:")
 		
-		"""
 		for thunk in self.FirstThunk:
 			thunk.printAll()
 			
 		print("-" * 20)
-		"""
+		
 	
 class ImportTable:
 	ImportDescriptorSize = 20
