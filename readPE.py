@@ -31,7 +31,32 @@ class PEReader:
 		
 		st.close()
 		
-	def dumpImportTable(self, mapData):
+		self.importTable = None
+		self.exportTable = None
+		self.relocationTable = None
+	
+	def getMSDosHeader(self):
+		return self.peHeaders.msDosHeader
+		
+	def getNTHeader(self):
+		return self.peHeaders.ntHeader
+		
+	def getFileHeader(self):
+		return self.peHeaders.fileHeader
+	
+	def getOptionalHeader(self):
+		return self.peHeaders.optionalHeader
+	
+	def getDataDirectory(self):
+		return self.peHeaders.dataDirectory
+	
+	def getSectionTable(self):
+		return self.peHeaders.sectionTable
+		
+	def getImportTable(self, mapData):
+		if self.importTable != None:
+			return self.importTable
+	
 		importTableVRva = self.peHeaders.optionalHeader.DataDirectory[1].VirtualAddress
 		importTableSize = self.peHeaders.optionalHeader.DataDirectory[1].Size
 		if self.peHeaders.optionalHeader.Magic == b"\x0b\x01":
@@ -42,19 +67,39 @@ class PEReader:
 			raise ROMImage("in dumpImportTable")
 			
 		self.importTable = ImportTable(mapData, importTableVRva, importTableSize, magic)
-		self.importTable.printAll()
+		return self.importTable
 	
-	def dumpRelocationTable(self, mapData):
-		relocationTableVRva = self.peHeaders.optionalHeader.DataDirectory[5].VirtualAddress
-		relocationTableSize = self.peHeaders.optionalHeader.DataDirectory[5].Size
-		self.relocationTable = RelocationTable(mapData, relocationTableVRva, relocationTableSize)
-		self.relocationTable.printAll()
+	def getExportTable(self, mapData):
+		if self.exportTable != None:
+			return self.exportTable
 		
-	def dumpExportTable(self, mapData):
 		exportTableVRva = self.peHeaders.optionalHeader.DataDirectory[0].VirtualAddress
 		exportTableSize = self.peHeaders.optionalHeader.DataDirectory[0].Size
 		self.exportTable = ExportTable(mapData, exportTableVRva, exportTableSize)
+		
+		return self.exportTable
+	
+	def getRelocationTable(self, mapData):
+		if self.relocationTable != None:
+			return self.relocationTable
+		
+		relocationTableVRva = self.peHeaders.optionalHeader.DataDirectory[5].VirtualAddress
+		relocationTableSize = self.peHeaders.optionalHeader.DataDirectory[5].Size
+		self.relocationTable = RelocationTable(mapData, relocationTableVRva, relocationTableSize)
+		
+		return self.relocationTable
+		
+	def dumpImportTable(self, mapData, flg=1):
+		self.importTable = self.getImportTable(mapData)
+		self.importTable.printAll(flg)
+	
+	def dumpExportTable(self, mapData):
+		self.exportTable = self.getExportTable(mapData)
 		self.exportTable.printAll()
+	
+	def dumpRelocationTable(self, mapData):
+		self.relocationTable = self.getRelocationTable(mapData)
+		self.relocationTable.printAll()
 	
 	def printAll(self):
 		self.peHeaders.printAll()

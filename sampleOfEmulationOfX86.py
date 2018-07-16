@@ -7,6 +7,8 @@ from capstone import *
 from pathlib import *
 from readPE import *
 from loadPE import *
+from importTable import *
+from exportTable import *
 
 class SimpleEngine:
 	def __init__(self, addr):
@@ -38,35 +40,47 @@ def main():
 	exeFile = Path("./sampledata/sample.exe")
 	peReader = PEReader(exeFile)
 	loader = PEFileLoader(exeFile)
-	loader.dump("dump.bin")
-	dumpFile = Path("./dump.bin")
-	st = dumpFile.open("rb")
-	dumpData = st.read()
-	st.close()
+	dumpData = loader.dump()
 	
 	
+	kernel32Reader = PEReader(Path("./DLL/kernel32.dll"))
+	dllLoader = PEFileLoader(Path("./DLL/kernel32.dll"))
+	kernel32Data = dllLoader.dump()
 	
-	# INC ecx; DEC edx
-	#sampCode = b"\x41\x4a"
+	
+	user32Reader = PEReader(Path("./DLL/user32.dll"))
+	dllLoader = PEFileLoader(Path("./DLL/user32.dll"))
+	user32Data = dllLoader.dump()
+	
+	api_Reader = PEReader(Path("./DLL/api-ms-win-core-libraryloader-l1-1-0.dll"))
+	dllLoader = PEFileLoader(Path("./DLL/api-ms-win-core-libraryloader-l1-1-0.dll"))
+	api_Data = dllLoader.dump()
+	
+	dllLoader = st = None
+	
+	kernel32ExportTable = kernel32Reader.getExportTable(kernel32Data)
+	user32ExportTable = user32Reader.getExportTable(user32Data)
+	api_ExportTable = api_Reader.getExportTable(api_Data)
+	
+	addr = kernel32Reader.getOptionalHeader().ImageBase
+	sizeofcode = kernel32Reader.getOptionalHeader().SizeOfCode
+	
+	a = api_Reader.getOptionalHeader().ImageBase
+	sc = api_Reader.getOptionalHeader().SizeOfCode
+	
 	
 	ADDRESS = peReader.peHeaders.optionalHeader.ImageBase
 	ENTRYPOINT = ADDRESS + peReader.peHeaders.optionalHeader.AddressOfEntryPoint
-	SIZEOFCODE = peReader.peHeaders.optionalHeader.SizeOfCode
-	DATAADDR = 0x600000
+	SIZEOFCODE = peReader.getOptionalHeader().SizeOfCode
+	STACKADDR = 0x600000
 	print("Base Address: " + hex(ADDRESS))
 	print("Entry Point: " + hex(ENTRYPOINT))
 	print("Size of Code: " + hex(SIZEOFCODE))
-	print("Data address: " + hex(DATAADDR))
+	print("Data address: " + hex(STACKADDR))
+	print("Kernel32 base addr: " + hex(addr))
+	print("api base addr: " + hex(a))
 	
 	disasm = SimpleEngine(ADDRESS)
-	
-	"""
-	print("Emulate i386 code")
-	print("-----------------")
-	print("[Sample Code]")
-	print("INC ecx\nDEC edx")
-	print("----------------")
-	"""
 	
 	mu = None
 	
@@ -75,10 +89,15 @@ def main():
 		mu = Uc(UC_ARCH_X86, UC_MODE_32)
 		
 		# map 2MB for this emulation
-		mu.mem_map(ADDRESS, 2 * 1024 * 1024)
-		mu.mem_map(DATAADDR, 256 * 1024 * 1024)
+		mu.mem_map(ADDRESS, 2 * 1024 * 1024 * 1024)
+		#mu.mem_map(ADDRESS, 2 * 1024 * 1024)
+		#mu.mem_map(STACKADDR, 256 * 1024 * 1024)
+		#mu.mem_map(addr, len(kernel32Data))
 		
+		mu.mem_write(ADDRESS, b"\x00" * 2 * 1024 * 1024 * 1024)
 		mu.mem_write(ADDRESS, dumpData)
+		mu.mem_write(addr, kernel32Data)
+		mu.mem_write(a, api_Data)
 		
 		#mu.hook_add(UC_HOOK_BLOCK, hook_block)
 		mu.hook_add(UC_HOOK_CODE, hook_code)
@@ -86,8 +105,43 @@ def main():
 		# Initialize machine registers
 		#mu.reg_write(UC_X86_REG_ECX, 0x1234)
 		#mu.reg_write(UC_X86_REG_EDX, 0x7890)
-		mu.reg_write(UC_X86_REG_EBP, DATAADDR + 256 * 1024 * 1024)
-		mu.reg_write(UC_X86_REG_ESP, DATAADDR + 256 * 1024 * 1024)
+		mu.reg_write(UC_X86_REG_EBP, STACKADDR + 256 * 1024 * 1024)
+		mu.reg_write(UC_X86_REG_ESP, STACKADDR + 256 * 1024 * 1024)
+		mu.reg_write(UC_X86_REG_SS, 0x0028)
+		mu.reg_write(UC_X86_REG_DS, 0x002b)
+		mu.reg_write(UC_X86_REG_ES, 0x002b)
+		mu.reg_write(UC_X86_REG_GS, 0x002b)
+		#mu.reg_write(UC_X86_REG_CS, ADDRESS)
+		
+		peImportTable = peReader.getImportTable(dumpData)
+		for ent in peImportTable:
+			thunks = ent.getThunks()
+			for thunk in thunks:
+				name = thunk.AddressOfData.Name
+				nameList = kernel32ExportTable.exportNameTable
+				ordList = kernel32ExportTable.exportNameOrdinalTable
+				funcList = kernel32ExportTable.exportAddressTable
+				for j in range(nameList.getSize()):
+					if name == nameList[j]:
+						ord = ordList[j]
+						funcAddr = funcList[ord]
+						#print(name + ", ", hex(funcAddr))
+						mu.mem_write(ADDRESS + thunk.getHeadPtr(), (addr + funcAddr).to_bytes(4, "little"))
+		
+		kernel32ImportTable = kernel32Reader.getImportTable(kernel32Data)
+		for ent in kernel32ImportTable:
+			thunks = ent.getThunks()
+			for thunk in thunks:
+				name = thunk.AddressOfData.Name
+				nameList = api_ExportTable.exportNameTable
+				ordList = api_ExportTable.exportNameOrdinalTable
+				funcList = api_ExportTable.exportAddressTable
+				for j in range(nameList.getSize()):
+					if name == nameList[j]:
+						ord = ordList[j]
+						funcAddr = funcList[ord]
+						#print(name + ", ", hex(funcAddr))
+						mu.mem_write(addr + thunk.getHeadPtr(), (a + funcAddr).to_bytes(4, "little"))
 		
 		# Emulate sampCode
 		print("[Emulation start]")
@@ -110,6 +164,10 @@ def main():
 		r_esi = mu.reg_read(UC_X86_REG_ESI)
 		r_eip = mu.reg_read(UC_X86_REG_EIP)
 		r_eflags = mu.reg_read(UC_X86_REG_EFLAGS)
+		r_CS = mu.reg_read(UC_X86_REG_CS)
+		r_SS = mu.reg_read(UC_X86_REG_SS)
+		r_DS = mu.reg_read(UC_X86_REG_DS)
+		r_ES = mu.reg_read(UC_X86_REG_ES)
 		print(">>> EAX = 0x%x" % r_eax)
 		print(">>> EBX = 0x%x" % r_ebx)
 		print(">>> ECX = 0x%x" % r_ecx)
@@ -119,7 +177,13 @@ def main():
 		print(">>> EDI = 0x%x" % r_edi)
 		print(">>> ESI = 0x%x" % r_esi)
 		print(">>> EIP = 0x%x" % r_eip)
-		print(">>> EFLAGS = 0x%x" % r_eflags)
+		print(">>> CS = 0x%x" % r_CS)
+		print(">>> SS = 0x%x" % r_SS)
+		print(">>> DS = 0x%x" % r_DS)
+		print(">>> ES = 0x%x" % r_ES)
+	
+	except Exception as e:
+		print(e)
 
 	
 

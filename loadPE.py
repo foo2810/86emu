@@ -79,14 +79,19 @@ class PEFileLoader:
 			self.mapData.seek(0)
 			
 	
-	def dump(self, filename):
+	def dump(self, filename=""):
 		if not self.isLoaded:
 			print("Pe format file has not mapped yet")
 			return
-			
-		st = open(filename, "wb")
+		
 		dumpData = self.mapData.read()
 		self.mapData.seek(0)
-		st.write(dumpData)
-		st.flush()
-		st.close()
+			
+		if filename != "":
+			st = open(filename, "wb")
+			
+			st.write(dumpData)
+			st.flush()
+			st.close()
+		
+		return dumpData

@@ -167,8 +167,8 @@ class ImageOptionalHeader32(BinaryReader):
 		print("MajorSubsystemVersion: ", self.MajorSubsystemVersion)
 		print("MinorSubsystemVersion: ", self.MinorSubsystemVersion)
 		print("Win32VersionValue: ", self.Win32VersionValue)
-		print("SizeOfImage: ", self.SizeOfImage)
-		print("SizeOfHeaders: ", self.SizeOfHeaders)
+		print("SizeOfImage: ", hex(self.SizeOfImage))
+		print("SizeOfHeaders: ", hex(self.SizeOfHeaders))
 		print("CheckSum: ", self.CheckSum)
 		print("Subsystem: ", self.Subsystem)
 		print("DllCharacteristics: ", self.DllCharacteristics)
@@ -257,8 +257,8 @@ class ImageOptionalHeader64(BinaryReader):
 		print("MajorSubsystemVersion: ", self.MajorSubsystemVersion)
 		print("MinorSubsystemVersion: ", self.MinorSubsystemVersion)
 		print("Win32VersionValue: ", self.Win32VersionValue)
-		print("SizeOfImage: ", self.SizeOfImage)
-		print("SizeOfHeaders: ", self.SizeOfHeaders)
+		print("SizeOfImage: ", hex(self.SizeOfImage))
+		print("SizeOfHeaders: ", hex(self.SizeOfHeaders))
 		print("CheckSum: ", self.CheckSum)
 		print("Subsystem: ", self.Subsystem)
 		print("DllCharacteristics: ", self.DllCharacteristics)
@@ -408,6 +408,24 @@ class PEHeaders:
 		self.optionalHeader = self.ntHeader.OptionalHeader
 		self.dataDirectory = self.optionalHeader.DataDirectory	# List
 		self.sectionTable = SectionTable(self.bData, self.ntHeader.getEndOffset()+1, self.ntHeader.FileHeader.NumberOfSections)
+	
+	def getMSDosHeader(self):
+		return self.msDosHeader
+		
+	def getNTHeader(self):
+		return self.ntHeader
+		
+	def getFileHeader(self):
+		return self.fileHeader
+	
+	def getOptionalHeader(self):
+		return self.optionalHeader
+	
+	def getDataDirectory(self):
+		return self.dataDirectory
+	
+	def getSectionTable(self):
+		return self.sectionTable
 	
 	def printAll(self):
 		print("[PE File Info]")

@@ -30,6 +30,9 @@ class ImageThunkData32(BinaryReader):
 		self.ForwarderString = getStringFromBytePtrLE(mapData, var)
 		self.Function = var
 		self.AddressOfData = ImageImportByName(mapData, var)
+	
+	def getHeadPtr(self):
+		return super().getStartOffset()
 		
 	
 	def printAll(self):
@@ -108,7 +111,7 @@ class ImageImportDescriptor(BinaryReader):
 		return self.FirstThunk
 		
 	
-	def printAll(self):
+	def printAll(self, flg):
 		print("[ImageImportDescriptor]")
 		print("Union: ", self.Union)
 		print("TimeDataStamp: ", self.TimeDataStamp)
@@ -117,8 +120,9 @@ class ImageImportDescriptor(BinaryReader):
 		#print("Thunks: (Ellipsis)")
 		print("Thunks:")
 		
-		for thunk in self.FirstThunk:
-			thunk.printAll()
+		if flg == 1:
+			for thunk in self.FirstThunk:
+				thunk.printAll()
 			
 		print("-" * 20)
 		
@@ -143,10 +147,10 @@ class ImportTable:
 			addr += ImportTable.ImportDescriptorSize
 			entry = ImageImportDescriptor(mapData, addr, magic)
 	
-	def printAll(self):
+	def printAll(self, flg):
 		print("[ImportTable]")
 		for i in range(len(self.ImportTableEntries)):
-			self.ImportTableEntries[i].printAll()
+			self.ImportTableEntries[i].printAll(flg)
 	
 	def __iter__(self):
 		return self
@@ -157,7 +161,7 @@ class ImportTable:
 			raise StopIteration
 		
 		entry = self.ImportTableEntries[self.i]
-		self.i += i
+		self.i += 1
 		
 		return entry
 		

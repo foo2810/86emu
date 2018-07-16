@@ -3,6 +3,103 @@
 from peBaseClass import *
 from utility import *
 
+# アドレスのサイズが64bitの場合と32bitの場合があるのか？
+# おそらくある.　しかしまだ未対応!!!!!!!!!!!!
+
+class ExportAddressTable(BinaryReader):
+	def __init__(self, mapData, vRva, num):
+		super().__init__(mapData, vRva)
+		
+		self.i = 0
+		
+		self.addrs = list()
+		self.numberOfEntry = num
+		
+		for i in range(num):
+			ptr = byteToIntLE(super().readBytes(4))	# アドレスサイズ不明
+			self.addrs.append(ptr)
+		
+	def __iter__(self):
+		return self
+	
+	def __next__(self):
+		if self.i == self.numberOfEntry:
+			self.i = 0
+			raise StopIteration
+		
+		entry = self.addrs[self.i]
+		self.i += 1
+		
+		return entry
+		
+	def __getitem__(self, j):
+		return self.addrs[j]
+
+class ExportNameTable(BinaryReader):
+	def __init__(self, mapData, vRva, num):
+		super().__init__(mapData, vRva)
+		self.i = 0
+		
+		self.names = list()
+		self.numberOfEntry = num
+		
+		for i in range(num):
+			ptr = byteToIntLE(super().readBytes(4))	# アドレスサイズ不明
+			name = getStringFromBytePtrLE(self.rawData, ptr)
+			self.names.append(name)
+	
+	def getSize(self):
+		return self.numberOfEntry
+	
+	def __iter__(self):
+		return self
+	
+	def __next__(self):
+		if self.i == self.numberOfEntry:
+			self.i = 0
+			raise StopIteration
+		
+		entry = self.names[self.i]
+		self.i += 1
+		
+		return entry
+	
+	def __getitem__(self, j):
+		return self.names[j]
+
+# 名前テーブルと序数テーブルは1対1に対応している
+# 例えば、"A"という名前のシンボルを名前テーブルから探し、それと同じインデックスで序数テーブルにアクセスすると、
+# エクスポートアドレステーブル上の対応するインデックスがある？
+class ExportNamesOrdinalsTable(BinaryReader):
+	def __init__(self, mapData, vRva, num):
+		super().__init__(mapData, vRva)
+		
+		self.i = 0
+		
+		self.namesOrdinals = list()
+		self.numberOfEntry = num
+		
+		for i in range(num):
+			n = byteToIntLE(super().readBytes(2))
+			#name = getStringFromBytePtrLE(self.rawData, ptr)
+			self.namesOrdinals.append(n)
+		
+	def __iter__(self):
+		return self
+	
+	def __next__(self):
+		if self.i == self.numberOfEntry:
+			self.i = 0
+			raise StopIteration
+		
+		entry = self.namesOrdinals[self.i]
+		self.i += 1
+		
+		return entry
+	
+	def __getitem__(self, j):
+		return self.namesOrdinals[j]
+			
 class ImageExportDirectory(BinaryReader):
 	def __init__(self, mapData, vRva, size):
 		super().__init__(mapData, vRva)
@@ -12,6 +109,7 @@ class ImageExportDirectory(BinaryReader):
 		self.MajorVersion = byteToIntLE(super().readBytes(2))
 		self.MinorVersion = byteToIntLE(super().readBytes(2))
 		self.Name = getStringFromBytePtrLE(mapData, byteToIntLE(super().readBytes(4)))
+		self.Base = byteToIntLE(super().readBytes(4))
 		self.NumberOfFunctions = byteToIntLE(super().readBytes(4))
 		self.NumberOfNames = byteToIntLE(super().readBytes(4))
 		self.AddressOfFunctions = byteToIntLE(super().readBytes(4))
@@ -24,6 +122,7 @@ class ImageExportDirectory(BinaryReader):
 		print("MajorVersion: ", self.MajorVersion)
 		print("MinorVersion: ", self.MinorVersion)
 		print("Name: ", self.Name)
+		print("Base: ",  self.Base)
 		print("NumberOfFunctions: ", self.NumberOfFunctions)
 		print("NumberOfNames: ", self.NumberOfNames)
 		print("AddressOfFunctions: ", hex(self.AddressOfFunctions))
@@ -44,11 +143,21 @@ class ExportTable:
 		addr = vRva
 		
 		self.exportDir = ImageExportDirectory(mapData, vRva, size)
+		self.exportAddressTable = ExportAddressTable(mapData, self.exportDir.AddressOfFunctions, self.exportDir.NumberOfFunctions)
+		self.exportNameTable = ExportNameTable(mapData, self.exportDir.AddressOfNames, self.exportDir.NumberOfNames)
+		self.exportNameOrdinalTable = ExportNamesOrdinalsTable(mapData, self.exportDir.AddressOfNameOrdinals, self.exportDir.NumberOfNames)
+		
 	
 	def printAll(self):
-		print("\nExportTable(Test)")
-		print("--------------------")
+		print("\nExportTable")
+		print("-" * 35)
 		self.exportDir.printAll()
+		
+		print("-" * 25)
+		print("Ordinal\t\tVRVA\t\tName")
+		for ord, name in zip(self.exportNameOrdinalTable, self.exportNameTable):
+			print("%7d\t\t0x%x\t\t%s" % (ord, self.exportAddressTable[ord], name))
+		
 		print("\n\n")
 		
 	def __iter__(self):

@@ -13,9 +13,10 @@ def main():
 		print("h: Show header Info")
 		print("l: Map file and dump the data")
 		print("I: Show import table")
+		print("E: Show export table")
 		print("R: Show relocation table")
 		print("a: Do everything")
-		print("t: For debug")
+		print("t: For debug (Nothing)")
 		print("")
 		exit(1)
 	elif argc == 2:
@@ -32,7 +33,7 @@ def main():
 	peReader = PEReader(path)
 	
 	## Reader
-	if option in "h" or option in "a":		
+	if "h" in option or "a" in option:		
 		peReader.printAll()
 		
 	## Loader
@@ -52,7 +53,10 @@ def main():
 	
 	## ImportTable
 	if "I" in option or "a" in option:
-		peReader.dumpImportTable(dump)
+		peReader.dumpImportTable(dump, 0)
+	
+	if "E" in option or "a" in option:
+		peReader.dumpExportTable(dump)
 	
 	## RelocationTable
 	if "R" in option or "a" in option:
@@ -60,7 +64,7 @@ def main():
 		
 	## [Test] ExportTable
 	if "t" in option:
-		peReader.dumpExportTable(dump)
+		pass
 	
 if __name__ == "__main__":
 	main()
