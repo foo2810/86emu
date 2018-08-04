@@ -29,6 +29,8 @@ def main():
 	if not path.exists():
 		print("Error: FileNotFound")
 		exit(1)
+		
+	print(path.name + "\n")
 	
 	peReader = PEReader(path)
 	
@@ -37,10 +39,15 @@ def main():
 		peReader.printAll()
 		
 	## Loader
-	if "l" in option or "I" in option or "R" in option or "a" in option:
-		loader = PEFileLoader(path)
+	dump = None
+	if "l" in option or "I" in option or "R" in option or "E" in option or "a" in option:
+		loader = PEFileLoader(path, printOn=False)
 		loader.dump("dump.bin")
+		st = open("dump.bin", "rb")
+		dump = st.read()
+		st.close()
 	
+	"""
 	dumpFile = Path("./dump.bin")
 	dump = b""
 	if dumpFile.exists():
@@ -50,10 +57,11 @@ def main():
 	else:
 		print("Error: dump.bin dose not exists")
 		sys.exit(1)
+	"""
 	
 	## ImportTable
 	if "I" in option or "a" in option:
-		peReader.dumpImportTable(dump, 0)
+		peReader.dumpImportTable(dump, flg=0)
 	
 	if "E" in option or "a" in option:
 		peReader.dumpExportTable(dump)

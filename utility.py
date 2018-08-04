@@ -1,5 +1,6 @@
 # Utilities
 
+from traceback import print_exc
 
 def byteToIntLE(byte_data):
 	"""
@@ -28,3 +29,7 @@ def getStringFromBytePtrLE(byte_data, ptr):
 		bStr = bStr + b.to_bytes(1, "little")
 	
 	return bStr.decode("utf-8", errors="ignore")
+	
+def printStackTrace():
+	print_exc()
+	

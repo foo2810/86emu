@@ -9,6 +9,7 @@ from readPE import *
 from loadPE import *
 from importTable import *
 from exportTable import *
+import x86UtilTemp
 
 
 class SimpleEngine:
@@ -40,6 +41,10 @@ def printReg(mu):
 	r_ES = mu.reg_read(UC_X86_REG_ES)
 	r_FS = mu.reg_read(UC_X86_REG_FS)
 	r_GS = mu.reg_read(UC_X86_REG_GS)
+	r_GDTR = mu.reg_read(UC_X86_REG_GDTR)
+	r_LDTR = mu.reg_read(UC_X86_REG_LDTR)
+	r_IDTR = mu.reg_read(UC_X86_REG_IDTR)
+	r_TR = mu.reg_read(UC_X86_REG_TR)	# task register	
 	print(">>> EAX = 0x%x" % r_eax)
 	print(">>> EBX = 0x%x" % r_ebx)
 	print(">>> ECX = 0x%x" % r_ecx)
@@ -55,6 +60,10 @@ def printReg(mu):
 	print(">>> ES = 0x%x" % r_ES)
 	print(">>> FS = 0x%x" % r_FS)
 	print(">>> GS = 0x%x" % r_GS)
+	print(">>> GDTR = ", r_GDTR)
+	print(">>> LDTR = ", r_LDTR)
+	print(">>> IDTR = ", r_IDTR)
+	print(">>> TR = ", r_TR)
 	
 def hook_block(uc, address, size, user_data):
 	print(">>> Tracing basic block at 0x%x, block size = 0x%x" % (address, size))
@@ -78,42 +87,43 @@ def main():
 	
 	kernel32Reader = PEReader(Path("./DLL/kernel32.dll"))
 	dllLoader = PEFileLoader(Path("./DLL/kernel32.dll"))
-	kernel32Data = dllLoader.dump()
+	kernel32Data = dllLoader.dump("kernel32.bin")
 	
 	
 	user32Reader = PEReader(Path("./DLL/user32.dll"))
 	dllLoader = PEFileLoader(Path("./DLL/user32.dll"))
-	user32Data = dllLoader.dump()
+	user32Data = dllLoader.dump("user32.bin")
 	
+	"""
 	api_Reader = PEReader(Path("./DLL/api-ms-win-core-libraryloader-l1-1-0.dll"))
 	dllLoader = PEFileLoader(Path("./DLL/api-ms-win-core-libraryloader-l1-1-0.dll"))
-	api_Data = dllLoader.dump()
-	
+	api_Data = dllLoader.dump("api-ms-win-core-libraryloader-l1-1-0.bin")
+	"""
 	dllLoader = st = None
 	
 	kernel32ExportTable = kernel32Reader.getExportTable(kernel32Data)
 	user32ExportTable = user32Reader.getExportTable(user32Data)
-	api_ExportTable = api_Reader.getExportTable(api_Data)
+	#api_ExportTable = api_Reader.getExportTable(api_Data)
 	
 	addr = kernel32Reader.getOptionalHeader().ImageBase
 	sizeofcode = kernel32Reader.getOptionalHeader().SizeOfCode
 	
-	a = api_Reader.getOptionalHeader().ImageBase
-	sc = api_Reader.getOptionalHeader().SizeOfCode
+	#a = api_Reader.getOptionalHeader().ImageBase
+	#sc = api_Reader.getOptionalHeader().SizeOfCode
 	
 	
 	ADDRESS = peReader.peHeaders.optionalHeader.ImageBase
 	ENTRYPOINT = ADDRESS + peReader.peHeaders.optionalHeader.AddressOfEntryPoint
 	SIZEOFCODE = peReader.getOptionalHeader().SizeOfCode
-	STACKADDR = 0x600000
-	print("Base Address: " + hex(ADDRESS))
-	#print("Entry Point: " + hex(ENTRYPOINT))
-	#print("Size of Code: " + hex(SIZEOFCODE))
-	print("Data address: " + hex(STACKADDR))
-	print("Kernel32 base address: " + hex(addr))
-	print("api base address: " + hex(a))
+	DATAADDR = 0x600000
+	DATASIZE = 0x250000
+	print("Base Address: " + hex(ADDRESS) + ", SIZE: " + hex(len(dumpData)))
+	print("Data address: " + hex(DATAADDR) + ", SIZE: " + hex(DATASIZE))
+	print("Kernel32 base address: " + hex(addr) + ", SIZE: " + hex(len(kernel32Data)))
+	#print("api base address: " + hex(a) + ", SIZE: " + hex(len(api_Data)))
 	
-	disasm = SimpleEngine(ADDRESS)
+	print("\nEntry Point: " + hex(ENTRYPOINT))
+	disasm = SimpleEngine(ENTRYPOINT)
 	
 	mu = None
 	
@@ -122,27 +132,58 @@ def main():
 		mu = Uc(UC_ARCH_X86, UC_MODE_32)
 		
 		# map 2MB for this emulation
-		mu.mem_map(ADDRESS, 2 * 1024 * 1024 * 1024)
-		#mu.mem_map(ADDRESS, 2 * 1024 * 1024)
-		#mu.mem_map(STACKADDR, 256 * 1024 * 1024)
-		#mu.mem_map(addr, len(kernel32Data))		
+		#mu.mem_map(ADDRESS, 2 * 1024 * 1024 * 1024)	
+		mu.mem_map(ADDRESS, len(dumpData))
+		mu.mem_map(DATAADDR, DATASIZE)
+		mu.mem_map(addr, len(kernel32Data))
+		#mu.mem_map(a, len(api_Data))
 		
 		#mu.hook_add(UC_HOOK_BLOCK, hook_block)
 		mu.hook_add(UC_HOOK_CODE, hook_code)
 		
-		mu.mem_write(ADDRESS, b"\x00" * 2 * 1024 * 1024 * 1024)
+		#mu.mem_write(ADDRESS, b"\x00" * 2 * 1024 * 1024 * 1024)
 		mu.mem_write(ADDRESS, dumpData)
 		mu.mem_write(addr, kernel32Data)
-		mu.mem_write(a, api_Data)
+		#mu.mem_write(a, api_Data)
 		
-		# Initialize machine registers		
-		"""
+		# Initialize machine registers
+		gdtBase = 0x900000
+		gdtSize = 8192
+		
+		gdtMgr = x86UtilTemp.GDTMgr(mu, gdtBase, gdtSize)
+		
+		# CS
+		selector = gdtMgr.createSegSelector(4, 0, 3)
+		flgs = gdtMgr.createGDTEntryFlgs(s=1, dpl=3, p=1, g=1, cd=1, ec=0, wr=1, aa=1)
+		entry = gdtMgr.createGDTEntry(0xffffffff, 0x0, flgs)
+		gdtMgr.setGDTEntry(entry, selector)
+		
+		# ES DS GS
+		selector = gdtMgr.createSegSelector(5, 0, 3)
+		flgs = gdtMgr.createGDTEntryFlgs(s=1, dpl=3, p=1, g=1, cd=1, ec=0, wr=1, aa=1)
+		entry = gdtMgr.createGDTEntry(0xffffffff, 0x0, flgs)
+		gdtMgr.setGDTEntry(entry, selector)
+		
+		# SS
+		selector = gdtMgr.createSegSelector(6, 0, 0)
+		flgs = gdtMgr.createGDTEntryFlgs(s=1, dpl=0, p=1, g=1, cd=0, ec=1, wr=1, aa=1)
+		entry = gdtMgr.createGDTEntry(0xffffffff, 0x0, flgs)
+		gdtMgr.setGDTEntry(entry, selector)
+		
+		# FS
+		selector = gdtMgr.createSegSelector(10, 0, 3)
+		flgs = gdtMgr.createGDTEntryFlgs(s=1, dpl=3, p=1, g=0, cd=0, ec=0, wr=1, aa=1)
+		entry = gdtMgr.createGDTEntry(0xffffffff, 0x0, flgs)
+		gdtMgr.setGDTEntry(entry, selector)
+		
+		
+		
 		print("SET SEGMENT REGISTER")
 		mu.reg_write(UC_X86_REG_ES, 0x002b)
 		print("ES")
 		mu.reg_write(UC_X86_REG_CS, 0x0023)
 		print("CS")
-		mu.reg_write(UC_X86_REG_SS, 0x002b)	#0x0028
+		mu.reg_write(UC_X86_REG_SS, 0x0030)	#0x002b
 		print("SS")
 		mu.reg_write(UC_X86_REG_DS, 0x002b)
 		print("DS")
@@ -150,9 +191,9 @@ def main():
 		print("FS")
 		mu.reg_write(UC_X86_REG_GS, 0x002b)
 		print("GS")
-		"""
-		mu.reg_write(UC_X86_REG_EBP, STACKADDR + 256 * 1024 * 1024)
-		mu.reg_write(UC_X86_REG_ESP, STACKADDR + 256 * 1024 * 1024)
+		
+		mu.reg_write(UC_X86_REG_EBP, DATAADDR + DATASIZE)
+		mu.reg_write(UC_X86_REG_ESP, DATAADDR + DATASIZE)
 		
 		
 		peImportTable = peReader.getImportTable(dumpData)
@@ -170,6 +211,7 @@ def main():
 						#print(name + ", ", hex(funcAddr))
 						mu.mem_write(ADDRESS + thunk.getHeadPtr(), (addr + funcAddr).to_bytes(4, "little"))
 		
+		"""
 		kernel32ImportTable = kernel32Reader.getImportTable(kernel32Data)
 		for ent in kernel32ImportTable:
 			thunks = ent.getThunks()
@@ -184,6 +226,7 @@ def main():
 						funcAddr = funcList[ord]
 						#print(name + ", ", hex(funcAddr))
 						mu.mem_write(addr + thunk.getHeadPtr(), (a + funcAddr).to_bytes(4, "little"))
+		"""
 		
 		# Emulation
 		print("[Emulation start]")
@@ -193,10 +236,12 @@ def main():
 	except UcError as e:
 		print(e)
 		printReg(mu)
+		printStackTrace()
 		
 	
 	except Exception as e:
-		print(e)
+		printStackTrace()
+		#print(e)
 
 	
 
