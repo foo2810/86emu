@@ -1,6 +1,6 @@
 # Base class for PE Format
 
-class HeaderBase:
+class BinaryReader:
 	def __init__(self, bData, selfOffset_):
 		self.rawData = bData
 		self.cPtr = selfOffset_
@@ -25,6 +25,9 @@ class HeaderBase:
 	
 	def getEndOffset(self):
 		return self.cPtr - 1
+	
+	def getSize(self):
+		return self.cPtr - self.selfOffset
 	
 	def checkMagic(self, size):
 		readData = self.readBytes(size)

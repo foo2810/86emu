@@ -105,6 +105,9 @@ venv.bak/
 
 # user add
 *.exe
+*.bin
+DLL/
 X86_manual/
 temp/
 sampledata/
+output/

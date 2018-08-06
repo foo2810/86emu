@@ -9,7 +9,13 @@ from utility import *
 # DWORD: 32bits unsigned
 # LONG: 32bits signed
 
-class MSDOSHeader(HeaderBase):
+class ROMImage(Exception):
+	description = "This PE format file is ROM image"
+	def __init__(self, info=""):
+		import sys
+		print(ROMImage.description + " - " + info, file=sys.stderr)
+
+class MSDOSHeader(BinaryReader):
 	# 64bytes
 	def __init__(self, bData):
 		super().__init__(bData, 0)
@@ -58,9 +64,9 @@ class MSDOSHeader(HeaderBase):
 		print("e_res2: ", self.e_res2)
 		print("e_lfanew: ", self.e_lfanew)
 		
-		print("-" * 30)
+		print("-" * 50)
 
-class ImageFileHeader(HeaderBase):
+class ImageFileHeader(BinaryReader):
 	# 22bytes
 	
 	def __init__(self, bData, ptr):
@@ -84,14 +90,14 @@ class ImageFileHeader(HeaderBase):
 		print("SizeOfOptionalHeader: ", self.SizeOfOptionalHeader)
 		print("Characteristics: ", hex(self.Characteristics))
 		
-		print("-" * 20)
+		print("-" * 30)
 
 class ImageDataDirectoryEntry:
 	def __init__(self, vAddr, size):
 		self.VirtualAddress = vAddr
 		self.Size = size
 		
-class ImageOptionalHeader32(HeaderBase):
+class ImageOptionalHeader32(BinaryReader):
 	# 96bytes
 	
 	def __init__(self, bData, ptr):
@@ -144,15 +150,15 @@ class ImageOptionalHeader32(HeaderBase):
 		print("Magic: ", self.Magic)
 		print("MajorLinkerVersion: ", self.MajorLinkerVersion)
 		print("MinorLinkerVersion: ", self.MinorLinkerVersion)
-		print("SizeOfCode: ", self.SizeOfCode)
-		print("SizeOfInitializedData: ", self.SizeOfInitializedData)
-		print("SizeOfUninitializedData: ", self.SizeOfUninitializedData)
+		print("SizeOfCode: " + hex(self.SizeOfCode), "(", (self.SizeOfCode), ")")
+		print("SizeOfInitializedData: " + hex(self.SizeOfInitializedData), "(", (self.SizeOfInitializedData), ")")
+		print("SizeOfUninitializedData: " + hex(self.SizeOfUninitializedData), "(", (self.SizeOfUninitializedData), ")")
 		print("AddressOfEntryPoint: ", self.AddressOfEntryPoint, "(", hex(self.AddressOfEntryPoint), ")")
 		print("BaseOfCode: ", self.BaseOfCode)
 		print("BaseOfData: ", self.BaseOfData)
 		
 		print("ImageBase: ", hex(self.ImageBase))
-		print("SectionAlignment: ", self.SectionAlignment)
+		print("SectionAlignment: ", hex(self.SectionAlignment))
 		print("FileAlignment: ", hex(self.FileAlignment))
 		print("MajorOperatingSystemVersion: ", self.MajorOperatingSystemVersion)
 		print("MinorOperatingSystemVersion: ", self.MinorOperatingSystemVersion)
@@ -161,8 +167,8 @@ class ImageOptionalHeader32(HeaderBase):
 		print("MajorSubsystemVersion: ", self.MajorSubsystemVersion)
 		print("MinorSubsystemVersion: ", self.MinorSubsystemVersion)
 		print("Win32VersionValue: ", self.Win32VersionValue)
-		print("SizeOfImage: ", self.SizeOfImage)
-		print("SizeOfHeaders: ", self.SizeOfHeaders)
+		print("SizeOfImage: ", hex(self.SizeOfImage))
+		print("SizeOfHeaders: ", hex(self.SizeOfHeaders))
 		print("CheckSum: ", self.CheckSum)
 		print("Subsystem: ", self.Subsystem)
 		print("DllCharacteristics: ", self.DllCharacteristics)
@@ -179,9 +185,9 @@ class ImageOptionalHeader32(HeaderBase):
 			print("\tVirtualAddress:", hex(self.DataDirectory[i].VirtualAddress))
 			print("\tSize:", self.DataDirectory[i].Size)
 		
-		print("-" * 20)
+		print("-" * 30)
 
-class ImageOptionalHeader64(HeaderBase):
+class ImageOptionalHeader64(BinaryReader):
 	# 96bytes
 	
 	def __init__(self, bData, ptr):
@@ -242,8 +248,8 @@ class ImageOptionalHeader64(HeaderBase):
 		#print("BaseOfData: ", self.BaseOfData)
 		
 		print("ImageBase: ", hex(self.ImageBase))
-		print("SectionAlignment: ", self.SectionAlignment)
-		print("FileAlignment: ", self.FileAlignment)
+		print("SectionAlignment: ", hex(self.SectionAlignment))
+		print("FileAlignment: ", hex(self.FileAlignment))
 		print("MajorOperatingSystemVersion: ", self.MajorOperatingSystemVersion)
 		print("MinorOperatingSystemVersion: ", self.MinorOperatingSystemVersion)
 		print("MajorImageVersion: ", self.MajorImageVersion)
@@ -251,8 +257,8 @@ class ImageOptionalHeader64(HeaderBase):
 		print("MajorSubsystemVersion: ", self.MajorSubsystemVersion)
 		print("MinorSubsystemVersion: ", self.MinorSubsystemVersion)
 		print("Win32VersionValue: ", self.Win32VersionValue)
-		print("SizeOfImage: ", self.SizeOfImage)
-		print("SizeOfHeaders: ", self.SizeOfHeaders)
+		print("SizeOfImage: ", hex(self.SizeOfImage))
+		print("SizeOfHeaders: ", hex(self.SizeOfHeaders))
 		print("CheckSum: ", self.CheckSum)
 		print("Subsystem: ", self.Subsystem)
 		print("DllCharacteristics: ", self.DllCharacteristics)
@@ -271,15 +277,9 @@ class ImageOptionalHeader64(HeaderBase):
 		#print("DataDirectory: DATADIRECTORY_SAMPLE")
 		#print("DataDirectory: ", self.DataDirectory)
 		"""
-		print("-" * 20)
-
-class ROMImage(Exception):
-	description = "This PE format file is ROM image"
-	def __init__(self):
-		import sys
-		print(description, file=sys.stderr)
+		print("-" * 30)
 		
-class NTHeader(HeaderBase):
+class NTHeader(BinaryReader):
 	# 4 + 20 + 96 + alpha = 120 + alpha bytes
 	
 	def __init__(self, bData, ptr):
@@ -304,14 +304,16 @@ class NTHeader(HeaderBase):
 		self.FileHeader.printAll()
 		self.OptionalHeader.printAll()
 		
-		print("-" * 30)
+		print("-" * 50)
 
 
 
-class ImageSectionHeader(HeaderBase):
+class ImageSectionHeader(BinaryReader):
 	# Size: 40
 	
 	nameLength = 8
+	# Alloc magic
+	allocMagic = 0xE0000000
 	
 	def __init__(self, bData, ptr):
 		super().__init__(bData, ptr)
@@ -338,6 +340,9 @@ class ImageSectionHeader(HeaderBase):
 		super().moveTo(savePtr)
 		
 		return rawData
+	
+	def isAlloced(self):
+		return self.Characteristics & ImageSectionHeader.allocMagic != 0
 
 	def printAll(self):
 		print("[SectionHeader]")
@@ -352,13 +357,13 @@ class ImageSectionHeader(HeaderBase):
 		print("NumberOfRelocations: ", self.NumberOfRelocations)
 		print("NumberOfLinenumbers: ", self.NumberOfLinenumbers)
 		print("Characteristics: ", hex(self.Characteristics))
-		if self.Characteristics & 0xE0000000 != 0:
+		if self.Characteristics & ImageSectionHeader.allocMagic != 0:
 			print("\tThis section is alloced.")
 		
-		print("-" * 20)
+		print("-" * 30)
 
 
-class SectionTable(HeaderBase):
+class SectionTable(BinaryReader):
 	def __init__(self, bData, ptr, nsec):
 		super().__init__(bData, ptr)
 		
@@ -403,6 +408,24 @@ class PEHeaders:
 		self.optionalHeader = self.ntHeader.OptionalHeader
 		self.dataDirectory = self.optionalHeader.DataDirectory	# List
 		self.sectionTable = SectionTable(self.bData, self.ntHeader.getEndOffset()+1, self.ntHeader.FileHeader.NumberOfSections)
+	
+	def getMSDosHeader(self):
+		return self.msDosHeader
+		
+	def getNTHeader(self):
+		return self.ntHeader
+		
+	def getFileHeader(self):
+		return self.fileHeader
+	
+	def getOptionalHeader(self):
+		return self.optionalHeader
+	
+	def getDataDirectory(self):
+		return self.dataDirectory
+	
+	def getSectionTable(self):
+		return self.sectionTable
 	
 	def printAll(self):
 		print("[PE File Info]")

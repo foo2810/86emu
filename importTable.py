@@ -3,19 +3,19 @@
 from peBaseClass import *
 from utility import *
 
-class ImageImportByName(HeaderBase):
+class ImageImportByName(BinaryReader):
 	def __init__(self, mapData, ptr):
 		super().__init__(mapData, ptr)
-		self.Hint = super().readBytes(2)
-		self.Name = getStringFromBytes(mapData, super().getCurrentPosition())
+		self.Hint = byteToIntLE(super().readBytes(2))
+		self.Name = getStringFromBytePtrLE(mapData, super().getCurrentPosition())
 		super().shiftPtr(len(self.Name) + 1)
 	
 	def printAll(self):
 		print("[ImageImportByName]")
 		print("Hint: ", self.Hint)
-		print("Name: ", self.Name)
+		print("Name(", hex(super().getStartOffset()), "): ", self.Name)
 
-class ImageThunkData32(HeaderBase):
+class ImageThunkData32(BinaryReader):
 	def __init__(self, mapData, ptr):
 		IMAGE_ORDINAL_FLAG32 = 0x80000000
 		
@@ -27,9 +27,12 @@ class ImageThunkData32(HeaderBase):
 		else:
 			self.Ordinal = None
 		
-		self.ForwarderString = getStringFromBytes(mapData, var)
+		self.ForwarderString = getStringFromBytePtrLE(mapData, var)
 		self.Function = var
 		self.AddressOfData = ImageImportByName(mapData, var)
+	
+	def getHeadPtr(self):
+		return super().getStartOffset()
 		
 	
 	def printAll(self):
@@ -41,9 +44,9 @@ class ImageThunkData32(HeaderBase):
 		print("Ordinal: ", self.Ordinal)
 		self.AddressOfData.printAll()
 		
-		print("-" * 10)
+		print("-" * 25)
 
-class ImageThunkData64(HeaderBase):
+class ImageThunkData64(BinaryReader):
 	def __init__(self, mapData, ptr):
 		IMAGE_ORDINAL_FLAG64 = 0x8000000000000000
 
@@ -56,7 +59,7 @@ class ImageThunkData64(HeaderBase):
 		else:
 			self.Ordinal = None
 		
-		self.ForwarderString = getStringFromBytes(mapData, var)
+		self.ForwarderString = getStringFromBytePtrLE(mapData, var)
 		self.Function = var
 		self.AddressOfData = ImageImportByName(mapData, var)
 	
@@ -67,9 +70,9 @@ class ImageThunkData64(HeaderBase):
 		print("Function: ", hex(self.Function))
 		self.AddressOfData.printAll()
 		
-		print("-" * 10)
+		print("-" * 25)
 
-class ImageImportDescriptor(HeaderBase):
+class ImageImportDescriptor(BinaryReader):
 	# 20 bytes
 	
 	def __init__(self, mapData, ptr, magic):
@@ -78,8 +81,8 @@ class ImageImportDescriptor(HeaderBase):
 		self.TimeDataStamp = byteToIntLE(super().readBytes(4))
 		self.ForwarderChain = super().readBytes(4)
 		
-		nameRVA = byteToIntLE(super().readBytes(4))
-		self.Name = getStringFromBytes(mapData, nameRVA)
+		self.nameRVA = byteToIntLE(super().readBytes(4))
+		self.Name = getStringFromBytePtrLE(mapData, self.nameRVA)
 		
 		firstThunkRVA = byteToIntLE(super().readBytes(4))
 		addr = firstThunkRVA
@@ -108,28 +111,34 @@ class ImageImportDescriptor(HeaderBase):
 		return self.FirstThunk
 		
 	
-	def printAll(self):
+	def printAll(self, flg):
 		print("[ImageImportDescriptor]")
 		print("Union: ", self.Union)
 		print("TimeDataStamp: ", self.TimeDataStamp)
 		print("ForwarderChain: ", self.ForwarderChain)
-		print("Name: ", self.Name)
-		print("Thunks: ")
-		for thunk in self.FirstThunk:
-			thunk.printAll()
+		print("Name(", hex(self.nameRVA), "): ", self.Name)
+		#print("Thunks: (Ellipsis)")
+		print("Thunks:")
 		
+		if flg == 1:
+			for thunk in self.FirstThunk:
+				thunk.printAll()
+			
 		print("-" * 20)
+		
 	
-class ImportTable(HeaderBase):
+class ImportTable:
 	ImportDescriptorSize = 20
 	def __init__(self, mapData, vRva, size, magic):
-		super().__init__(mapData, vRva)
+		#super().__init__(mapData, vRva)
 		
 		# For iteration
 		self.i = 0
 		
+		self.size = size
 		self.ImportTableEntries = list()
 		self.numberOfEntry = 0
+		
 		addr = vRva
 		entry = ImageImportDescriptor(mapData, addr, magic)
 		while entry.Union != 0:
@@ -138,10 +147,10 @@ class ImportTable(HeaderBase):
 			addr += ImportTable.ImportDescriptorSize
 			entry = ImageImportDescriptor(mapData, addr, magic)
 	
-	def printAll(self):
+	def printAll(self, flg):
 		print("[ImportTable]")
 		for i in range(len(self.ImportTableEntries)):
-			self.ImportTableEntries[i].printAll()
+			self.ImportTableEntries[i].printAll(flg)
 	
 	def __iter__(self):
 		return self
@@ -152,7 +161,7 @@ class ImportTable(HeaderBase):
 			raise StopIteration
 		
 		entry = self.ImportTableEntries[self.i]
-		self.i += i
+		self.i += 1
 		
 		return entry
 		

@@ -1,5 +1,7 @@
 # Utilities
 
+from traceback import print_exc
+
 def byteToIntLE(byte_data):
 	"""
 	value_str = ""
@@ -19,11 +21,15 @@ def byteToIntLE(byte_data):
 	return int.from_bytes(byte_data, "little")
 
 # C string
-def getStringFromBytes(byte_data, ptr):
+def getStringFromBytePtrLE(byte_data, ptr):
 	bStr = b""
 	for b in byte_data[ptr:]:
 		if b == 0:
 			break
 		bStr = bStr + b.to_bytes(1, "little")
 	
-	return bStr.decode("utf-8")
+	return bStr.decode("utf-8", errors="ignore")
+	
+def printStackTrace():
+	print_exc()
+	
