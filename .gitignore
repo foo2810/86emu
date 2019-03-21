@@ -107,4 +107,5 @@ venv.bak/
 *.exe
 X86_manual/
 temp/
+tools/
 sampledata/
